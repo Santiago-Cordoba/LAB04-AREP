@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music APP</title>
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Music APP</h1>
+    </header>
+
+    <div class="form-container">
+        <h2>Agregar Nueva Canción</h2>
+        <div class="form-group">
+            <label for="songTitle">Título:</label>
+            <input type="text" id="songTitle" placeholder="Ej: Bohemian Rhapsody">
+        </div>
+        <div class="form-group">
+            <label for="songArtist">Artista/Banda:</label>
+            <input type="text" id="songArtist" placeholder="Ej: Queen">
+        </div>
+        <button onclick="addSong()" class="btn-add">Agregar Cancion</button>
+    </div>
+
+    <div class="songs-container">
+        <h2>Mis Canciones</h2>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Buscar canciones...">
+            <button onclick="searchSongs()" class="btn-search"> Buscar</button>
+        </div>
+        <div id="loading">Cargando canciones...</div>
+        <table id="songsTable">
+            <thead>
+            <tr>
+                <th>Canción</th>
+                <th>Artista</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
