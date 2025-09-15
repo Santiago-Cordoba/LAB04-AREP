@@ -21,7 +21,7 @@ public class MicroSpringBoot {
 
             System.out.println("=== Iniciando MicroSpringBoot ===");
 
-            // Agregar shutdown hook para apagado elegante
+
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 if (running.get()) {
                     System.out.println("Recibida señal de apagado, iniciando apagado elegante...");
@@ -38,7 +38,7 @@ public class MicroSpringBoot {
             HttpServer.getRoutes.keySet().forEach(route ->
                     System.out.println("  GET " + route));
 
-            // Iniciar el servidor (esto bloqueará el hilo actual)
+
             System.out.println("Iniciando servidor HTTP...");
             HttpServer.main(new String[0]);
 
@@ -52,7 +52,7 @@ public class MicroSpringBoot {
         // Configurar automáticamente el HttpServer
         HttpServer.staticfiles("src/main/resources");
         HttpServer.setContextPath("");
-        HttpServer.setThreadPoolSize(20); // Pool de hilos más grande para SpringBoot
+        HttpServer.setThreadPoolSize(20);
         System.out.println("Servidor configurado con:");
         System.out.println("  - Archivos estáticos en: src/main/resources");
         System.out.println("  - Context path: /");

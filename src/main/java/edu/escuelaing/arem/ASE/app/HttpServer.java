@@ -41,7 +41,6 @@ public class HttpServer {
         songs.add(new Song("Imagine", "John Lennon"));
         songs.add(new Song("Hotel California", "Eagles"));
 
-        // Shutdown hook para apagado elegante
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (running) {
                 shutdownServer();
@@ -86,18 +85,15 @@ public class HttpServer {
     }
 
     private static boolean isRunningInDocker() {
-        // Verificar si estamos ejecutando en Docker
         File dockerEnv = new File("/.dockerenv");
         return dockerEnv.exists() || System.getenv("DOCKER_CONTAINER") != null;
     }
 
     private static void initializeStaticFilesPath() {
         if (isRunningInDocker()) {
-            // En Docker, los archivos están en /app/resources
             staticFilesBase = "/usrapp/bin/resources";
             System.out.println("Modo Docker detectado. Static files en: " + staticFilesBase);
         } else {
-            // En desarrollo local
             staticFilesBase = "src/main/resources";
             System.out.println("Modo desarrollo. Static files en: " + staticFilesBase);
         }
@@ -106,10 +102,8 @@ public class HttpServer {
     public static void main(String[] args) throws IOException {
 
         initializeStaticFilesPath();
-        // Inicializar el pool de hilos
-        threadPool = Executors.newFixedThreadPool(threadPoolSize);
 
-        // Example usage of the new framework API
+        threadPool = Executors.newFixedThreadPool(threadPoolSize);
 
         get("/hello", (req, resp) -> "Hello " + req.getQueryParam("name"));
 
@@ -119,7 +113,6 @@ public class HttpServer {
         }
         serverSocket.close();
 
-        // Apagado elegante
         shutdownServer();
     }
 
@@ -135,7 +128,6 @@ public class HttpServer {
     private static void handleClientConnection(ServerSocket serverSocket) {
         try {
             Socket clientSocket = serverSocket.accept();
-            // Enviar la tarea al pool de hilos
             threadPool.submit(() -> {
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                      OutputStream outputStream = clientSocket.getOutputStream()) {
@@ -189,8 +181,8 @@ public class HttpServer {
                 }
                 isFirstLine = false;
             } else {
-                // Parsear headers
-                if (inputLine.isEmpty()) break; // Fin de headers
+
+                if (inputLine.isEmpty()) break;
                 int colonIndex = inputLine.indexOf(':');
                 if (colonIndex > 0) {
                     String headerName = inputLine.substring(0, colonIndex).trim();
@@ -205,7 +197,7 @@ public class HttpServer {
     }
 
     private static void processRequest(OutputStream outputStream, Request request) throws IOException {
-        // Check if it's a framework route first
+
         if (request.getPath().startsWith(contextPath)) {
             String frameworkPath = request.getPath().substring(contextPath.length());
             BiFunction<Request, Response, String> handler = getRoutes.get(frameworkPath);
@@ -221,7 +213,7 @@ public class HttpServer {
             return;
         }
 
-        // Fall back to original functionality
+
         if (request.getPath().startsWith("/api/songs")) {
             handleApiRequest(outputStream, request);
         } else {
@@ -382,7 +374,6 @@ public class HttpServer {
         System.out.println("Iniciando apagado elegante del servidor...");
         running = false;
 
-        // Cerrar el pool de hilos de manera ordenada
         if (threadPool != null) {
             threadPool.shutdown();
             try {
