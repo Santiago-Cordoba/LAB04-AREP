@@ -1,104 +1,44 @@
-# Lab03 AREP
+# Lab04  AREP
 
-En este laboratorio se desarrolló un servidor Http con el fin de poder realizar multiples solicitudes, para lograrlo 
-se utilizó javascript, css, java y librerias que nos permitan realizar el manejo de la red, más no se utilizaron frameworks
-como Spark o Spring.
+Para este laboratorio se implemento hilos al MicroSpringBoot y tambien se desplego tanto en Docker en varias instancias 
+tambien como se desplego en AWS en un EC2.
 
-Se realizo el servidor Http para poder realizar una lista de música, es decir poder manejar tu propia lista de música.
+Acontinuación se podra ver la evidencia del funcionamiento del despliegue.
 
-## Screenshots of the project in action
+### Capturas de Pantalla
 
-Inicio de la pagina.
+En esta imagen vemos la imagen que se creó en Docker.
 
-![Descripción de la imagen](src/img/img_1.png)
+![Descripción de la imagen](src/img/img_13.png)
 
-Vamos a añadir una canción a la lista.
+Lo siguiente es ver los respectivos contenedores/instancias que se crearon.
 
-![Descripción de la imagen](src/img/img_2.png)
+![Descripción de la imagen](src/img/img_14.png)
 
-Vemos que se añadio correctamente la canción a la lista de canciones.
+Ahora probaremos que estas esten en funcionamiento.
 
-![Descripción de la imagen](src/img/img_3.png)
+- Localhost:34000
 
-Vemos que la función de buscar canciones funciona de manera correcta.
+![Descripción de la imagen](src/img/img_15.png)
 
-![Descripción de la imagen](src/img/img_4.png)
+- Localhost:34001
 
-### Screenshoots of the third lab
+![Descripción de la imagen](src/img/img_16.png)
 
-Aca podemos observar el funcionamiento cuando se ponen diferentes direcciones.
+- Localhost:34002
 
-Primero probaremos con lo añadido este laboratorio con "http://localhost:35000/string" recibimos un mensaje"
+![Descripción de la imagen](src/img/img_17.png)
 
-![Descripción de la imagen](src/img/img_11.png)
+Viendo que en Docker ya todo está en funcionamiento lo siguiente que se hara es probar que en AWS este todo en funcionamiento,
+para esto lo primero que haremos será mirar que en AWS esté funcionando de manera correcta.
 
-Ahora se mostrara que se puede recibir parametros con lo añadido del microSpringBoot con "http://localhost:35000/greeting?name=PruebaLab"
+![Descripción de la imagen](src/img/img_19.png)
 
-![Descripción de la imagen](src/img/img_12.png)
+![Descripción de la imagen](src/img/img_18.png)
 
-Ahora podemos observar como retorna el número pi con la dirección "http://localhost:35000/pi"
+### Video
 
-![Descripción de la imagen](src/img/img_6.png)
-
-Ahora traemos un Static file siendo en este caso una imagen con "http://localhost:35000/image"
-
-![Descripción de la imagen](src/img/img_7.png)
-
-Con la dirección "http://localhost:35000/index.html" se trae el proyecto de música previamente mostrado
-
-![Descripción de la imagen](src/img/img_8.png)
-
-Y por último con la dirección "http://localhost:35000/api/songs" traemos a forma de JSON las listas de música de ejemplo en el proyecto.
-
-![Descripción de la imagen](src/img/img_9.png)
-
-## Getting Started
-
-Lo siguiente que se apreciara son los prerrequisitos para poder correr el proyecto de manera correcta.
-
-### Prerequisites
-
-Los prerrequisitos para poder instalar el proyecto son los siguientes:
-
-```
-- Maven
-- Cualquier navegador Web
-- Java 17+
-```
-### Installing
-
-A continuación se va a ver el paso a paso para la instalación del proyecto.
-
-1. Clonar el repositorio
-
-```
-git clone https://github.com/Santiago-Cordoba/Lab03-AREP.git
-```
-
-2. Compilar el proyecto con maven (requisito previamente escrito)
-
-```
-mvn package
-```
-
-3. Ahora se colocará en la terminal el siguiente comando para ejecutar la clase MicroSpringBoot
-
-```
-java -cp target/Lab01-AREP-1.0-SNAPSHOT.jar edu.escuelaing.arem.ASE.app.MicroSpringBoot edu.escuelaing.arem.ASE.app.Controller
-
-```
-
-4. Una vez se esté ejecutando de manera correcta la clase HttpServer, en el navegador podremos colocar las siguientes direcciones para pobrar el funcionamiento:
-
-
-```
-http://localhost:35000/string
-http://localhost:35000/greeting?name=PruebaLab
-http://localhost:35000/pi
-http://localhost:35000/image
-http://localhost:35000/index.html
-http://localhost:35000/api/songs 
-```
+[Video evidencia del funcionamiento](https://pruebacorreoescuelaingeduco-my.sharepoint.com/:v:/g/personal/santiago_cordoba-d_mail_escuelaing_edu_co/EbREmNldZOxBk0PbkKEnV4sBUDOoOFCTq2Qfo4JdGHsV-Q?e=gh8a4Q&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D)
 
 ## Running the tests
 
@@ -146,8 +86,13 @@ web-framework/
 │       └── script.js
 ├── pom.xml
 └── README.md
+└── DockerFile
 ```
+Arquitectura:
 
+```
+Frontend --> Api Rest --> Backend --> Despliegue
+```
 
 ## Built With
 
@@ -164,5 +109,7 @@ web-framework/
 * Entendimiento del funcionamiento de los Sockets
 * Entendimiento del funcionamiento de los microframeworks
 * Entendimiento sobre el funcionamiento de SpringBoot por debajo
+* Aprendizaje acerca del uso de Docker
+* Aprendizaje acerca del funcionamiento de un EC2 en AWS
 
 

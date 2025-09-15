@@ -4,9 +4,10 @@ import edu.escuelaing.arem.ASE.app.Annotations.*;
 
 import java.io.IOException;
 import java.lang.reflect.*;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MicroSpringBoot {
+    private static final AtomicBoolean running = new AtomicBoolean(true);
 
     public static void main(String[] args) {
         try {
@@ -20,6 +21,13 @@ public class MicroSpringBoot {
 
             System.out.println("=== Iniciando MicroSpringBoot ===");
 
+            // Agregar shutdown hook para apagado elegante
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (running.get()) {
+                    System.out.println("Recibida señal de apagado, iniciando apagado elegante...");
+                    running.set(false);
+                }
+            }));
 
             configureHttpServer();
 
@@ -44,9 +52,11 @@ public class MicroSpringBoot {
         // Configurar automáticamente el HttpServer
         HttpServer.staticfiles("src/main/resources");
         HttpServer.setContextPath("");
+        HttpServer.setThreadPoolSize(20); // Pool de hilos más grande para SpringBoot
         System.out.println("Servidor configurado con:");
         System.out.println("  - Archivos estáticos en: src/main/resources");
         System.out.println("  - Context path: /");
+        System.out.println("  - Thread pool size: " + HttpServer.getThreadPoolSize());
     }
 
     private static void registerController(Class<?> controllerClass) throws Exception {
@@ -71,7 +81,6 @@ public class MicroSpringBoot {
 
         HttpServer.get(path, (request, response) -> {
             try {
-
                 Object[] parameters = prepareMethodParameters(method, request, response);
 
                 // Invocar el método del controlador
@@ -99,16 +108,11 @@ public class MicroSpringBoot {
             Parameter parameter = parameters[i];
             Class<?> paramType = parameter.getType();
 
-
             if (paramType.equals(Request.class)) {
                 parameterValues[i] = request;
-            }
-
-            else if (paramType.equals(Response.class)) {
+            } else if (paramType.equals(Response.class)) {
                 parameterValues[i] = response;
-            }
-
-            else if (parameter.isAnnotationPresent(RequestParam.class)) {
+            } else if (parameter.isAnnotationPresent(RequestParam.class)) {
                 RequestParam annotation = parameter.getAnnotation(RequestParam.class);
                 String paramValue = request.getQueryParam(annotation.value());
 
@@ -116,10 +120,8 @@ public class MicroSpringBoot {
                     paramValue = annotation.defaultValue();
                 }
 
-
                 parameterValues[i] = convertToType(paramValue, paramType);
             } else {
-
                 parameterValues[i] = getDefaultValue(paramType);
             }
         }

@@ -10,20 +10,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-
 
 public class HttpServer {
     private static final Map<String, String> CONTENT_TYPES = new HashMap<>();
     private static final List<Song> songs = new ArrayList<>();
     private static boolean running = true;
 
-
     static Map<String, BiFunction<Request, Response, String>> getRoutes = new ConcurrentHashMap<>();
     private static String staticFilesBase = "src/main/resources";
     private static String contextPath = "/App";
-    public static Map<String, BiFunction<Request, Response, String>> getRoutes = new ConcurrentHashMap<>();
     public static Map<String, BiFunction<Request, Response, String>> postRoutes = new ConcurrentHashMap<>();
+
+    private static ExecutorService threadPool;
+    private static int threadPoolSize = 10;
 
     static {
         CONTENT_TYPES.put("html", "text/html");
@@ -34,12 +37,17 @@ public class HttpServer {
         CONTENT_TYPES.put("gif", "image/gif");
         CONTENT_TYPES.put("json", "application/json");
 
-
         songs.add(new Song("Bohemian Rhapsody", "Queen"));
         songs.add(new Song("Imagine", "John Lennon"));
         songs.add(new Song("Hotel California", "Eagles"));
-    }
 
+        // Shutdown hook para apagado elegante
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (running) {
+                shutdownServer();
+            }
+        }));
+    }
 
     public static void staticfiles(String path) {
         staticFilesBase = path;
@@ -53,17 +61,66 @@ public class HttpServer {
         contextPath = path;
     }
 
-    public static void main(String[] args) throws IOException {
-        // Example usage of the new framework API
-        staticfiles("src/main/resources");
-        get("/hello", (req, resp) -> "Hello " + req.getQueryParam("name"));
+    public static void setThreadPoolSize(int size) {
+        threadPoolSize = size;
+    }
 
+    public static int getThreadPoolSize() {
+        return threadPoolSize;
+    }
+
+    public static void configureForEnvironment(String environment) {
+        switch (environment.toLowerCase()) {
+            case "production":
+                setThreadPoolSize(50);
+                staticfiles("/app/resources");
+                break;
+            case "development":
+                setThreadPoolSize(10);
+                staticfiles("src/main/resources");
+                break;
+            default:
+                setThreadPoolSize(20);
+                staticfiles("src/main/resources");
+        }
+    }
+
+    private static boolean isRunningInDocker() {
+        // Verificar si estamos ejecutando en Docker
+        File dockerEnv = new File("/.dockerenv");
+        return dockerEnv.exists() || System.getenv("DOCKER_CONTAINER") != null;
+    }
+
+    private static void initializeStaticFilesPath() {
+        if (isRunningInDocker()) {
+            // En Docker, los archivos están en /app/resources
+            staticFilesBase = "/usrapp/bin/resources";
+            System.out.println("Modo Docker detectado. Static files en: " + staticFilesBase);
+        } else {
+            // En desarrollo local
+            staticFilesBase = "src/main/resources";
+            System.out.println("Modo desarrollo. Static files en: " + staticFilesBase);
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        initializeStaticFilesPath();
+        // Inicializar el pool de hilos
+        threadPool = Executors.newFixedThreadPool(threadPoolSize);
+
+        // Example usage of the new framework API
+
+        get("/hello", (req, resp) -> "Hello " + req.getQueryParam("name"));
 
         ServerSocket serverSocket = startServer(35000);
         while (running) {
             handleClientConnection(serverSocket);
         }
         serverSocket.close();
+
+        // Apagado elegante
+        shutdownServer();
     }
 
     private static ServerSocket startServer(int port) throws IOException {
@@ -71,20 +128,38 @@ public class HttpServer {
         System.out.println("Servidor de música iniciado en http://localhost:" + port);
         System.out.println("Context path: " + contextPath);
         System.out.println("Static files base: " + staticFilesBase);
+        System.out.println("Thread pool size: " + threadPoolSize);
         return serverSocket;
     }
 
     private static void handleClientConnection(ServerSocket serverSocket) {
-        try (Socket clientSocket = serverSocket.accept();
-             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-             OutputStream outputStream = clientSocket.getOutputStream()) {
+        try {
+            Socket clientSocket = serverSocket.accept();
+            // Enviar la tarea al pool de hilos
+            threadPool.submit(() -> {
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                     OutputStream outputStream = clientSocket.getOutputStream()) {
 
-            Request request = parseRequest(in);
-            if (request != null) {
-                processRequest(outputStream, request);
-            }
+                    Request request = parseRequest(in);
+                    if (request != null) {
+                        processRequest(outputStream, request);
+                    }
+                } catch (IOException e) {
+                    if (running) {
+                        System.err.println("Error en conexión con cliente: " + e.getMessage());
+                    }
+                } finally {
+                    try {
+                        clientSocket.close();
+                    } catch (IOException e) {
+                        System.err.println("Error cerrando socket: " + e.getMessage());
+                    }
+                }
+            });
         } catch (IOException e) {
-            System.err.println("Error en conexión con cliente: " + e.getMessage());
+            if (running) {
+                System.err.println("Error aceptando conexión: " + e.getMessage());
+            }
         }
     }
 
@@ -98,18 +173,16 @@ public class HttpServer {
         boolean isFirstLine = true;
         while ((inputLine = in.readLine()) != null) {
             if (isFirstLine) {
-
                 if (inputLine.startsWith("GET") || inputLine.startsWith("POST")) {
                     String[] requestParts = inputLine.split(" ");
                     method = requestParts[0];
-
 
                     String fullPath = requestParts[1];
                     int queryIndex = fullPath.indexOf('?');
                     if (queryIndex != -1) {
                         path = fullPath.substring(0, queryIndex);
                         String queryString = fullPath.substring(queryIndex + 1);
-                        queryParams = Request.parseQueryParams(queryString); // Now this will work
+                        queryParams = Request.parseQueryParams(queryString);
                     } else {
                         path = fullPath;
                     }
@@ -131,8 +204,6 @@ public class HttpServer {
         return !method.isEmpty() ? new Request(method, path, queryParams, headers) : null;
     }
 
-
-
     private static void processRequest(OutputStream outputStream, Request request) throws IOException {
         // Check if it's a framework route first
         if (request.getPath().startsWith(contextPath)) {
@@ -146,7 +217,7 @@ public class HttpServer {
         }
 
         if ("/image".equals(request.getPath())) {
-            serveImage(outputStream, "src/main/resources/images/fondo.jpg");
+            serveImage(outputStream, staticFilesBase);
             return;
         }
 
@@ -307,7 +378,26 @@ public class HttpServer {
         }
     }
 
+    private static void shutdownServer() {
+        System.out.println("Iniciando apagado elegante del servidor...");
+        running = false;
 
+        // Cerrar el pool de hilos de manera ordenada
+        if (threadPool != null) {
+            threadPool.shutdown();
+            try {
+                if (!threadPool.awaitTermination(30, TimeUnit.SECONDS)) {
+                    threadPool.shutdownNow();
+                    if (!threadPool.awaitTermination(30, TimeUnit.SECONDS)) {
+                        System.err.println("El pool de hilos no terminó correctamente");
+                    }
+                }
+            } catch (InterruptedException e) {
+                threadPool.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
 
+        System.out.println("Servidor apagado correctamente");
+    }
 }
-
